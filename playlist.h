@@ -1,3 +1,6 @@
+#ifndef PLAYLIST_H
+#define PLAYLIST_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,3 +34,4 @@ void clist_print(clist list, FILE* file);
 void clist_display(clist list, FILE* file); 
 
 
+#endif // PLAYLIST_H

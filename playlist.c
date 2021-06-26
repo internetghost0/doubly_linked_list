@@ -1,6 +1,6 @@
 #include "playlist.h"
-
-clist create_clist(void) 
+#include <string.h>
+clist clist_create(void) 
 {
 	clist list;
 	list.head = list.tail = NULL;
@@ -46,22 +46,30 @@ size_t clist_length(clist  list)
 	return list.length;
 }
 
-void clist_insert(clist* list, int index, const char* string) 
-{
-	int real_index = index;
-	if (real_index < 0) {
-		real_index += list->length;
-	}		
-	if (real_index < 0 || real_index >= list->length) {
+size_t _clist_real_index(clist* l, int index) {
+	if ((index + (int)l->length) < 0 || index >= (int)l->length) {
 		fprintf(stderr, "IndexError: list index out of range\n");
-		return;
+        exit(-1);
 	}
-	
-	if (index == -1 || real_index == list->length-1) {
+	size_t real_index = 0;
+	if (index < 0) {
+		real_index = (size_t)(index + (int)l->length);
+	} else {
+        real_index = index;
+    }
+
+    return real_index;
+}
+
+
+void clist_insert(clist* list, int _index, const char* string) 
+{
+    size_t index = _clist_real_index(list, _index);
+	if (index == list->length-1) {
 		clist_append(list, string);
 		return;
 	}
-	else if (real_index == 0) {
+	else if (index == 0) {
 		node* x = malloc(sizeof(node));
 		strncpy(x->data, string, STRING_SIZE);
 		x->prev = NULL;
@@ -76,10 +84,8 @@ void clist_insert(clist* list, int index, const char* string)
 	strncpy(x->data, string, STRING_SIZE);
 	
 	if (index < (list->length / 2) ) {
-		if (real_index != index) real_index += 1;
-		index = real_index;
 		node* tmp = list->head;
-		for(int i = 0; i < index; i++)
+		for(size_t i = 0; i < index; i++)
 			tmp = tmp->next;
 			
 		x->prev = tmp->prev;
@@ -88,10 +94,8 @@ void clist_insert(clist* list, int index, const char* string)
 		x->next = tmp;
 	}
 	else {
-		index = real_index;
-		index += index < 0 ? list->length : 0;
 		node* tmp = list->tail;
-		for(int i = list->length-1; i > index; i--)
+		for(size_t i = list->length-1; i > index; i--)
 			tmp = tmp->prev;
 			
 		tmp->next->prev = x;
@@ -106,63 +110,51 @@ const char* clist_pop(clist* list)
 	node* tmp = list->tail;
 	list->tail = tmp->prev;
 	list->tail->next = NULL;
-	
-	bzero(tmp, sizeof(node));
+	list->length--;
+
+    char* res = tmp->data;	
 	free(tmp);
 	
-	list->length--;
+    return res;
 }
 
-void clist_rem(clist* list, int index) 
+void clist_rem(clist* list, int _index) 
 {
-	int real_index = index;
+	size_t index = _clist_real_index(list, _index);
 	node* tmp = NULL;
 	
-	if (real_index < 0) 
-		real_index += list->length;
-		
-	if (real_index < 0 || real_index >= list->length) {
-		fprintf(stderr, "IndexError: list index out of range\n");
-		return;
-	}
-	if (real_index == 0) {
+	if (index == 0) {
 		tmp = list->head;
 		list->head = tmp->next;
 		list->head->prev = NULL;
-		bzero(tmp, sizeof(node));
 		free(tmp);
 		list->length--;
 		return;
 		
 	}
 	
-	if (index == -1) {
+	if (index == list->length-1) {
 		clist_pop(list);
 		return;
 	}
 	
 	if (index < (list->length / 2) ) {
 		tmp = list->head;
-		if (real_index != index) real_index += 1;
-		index = real_index;
-		for(int i = 0; i < index; i++)
+		for(size_t i = 0; i < index; i++)
 			tmp = tmp->next;
-
 	}
 	else {
-		index = real_index;
 		node* tmp = list->tail;
-		for(int i = list->length-1; i > index; i--)
+		for(size_t i = list->length-1; i > index; i--)
 			tmp = tmp->prev;
 	}	
 	tmp->prev->next = tmp->next;
 	tmp->next->prev = tmp->prev;
-	bzero(tmp, sizeof(node));
 	free(tmp);
 	list->length--;
 }
 
-void remove_clist(clist* list) 
+void clist_remove(clist* list) 
 {
 	node* tmp = list->head->next;
 	while (tmp != list->tail) {
